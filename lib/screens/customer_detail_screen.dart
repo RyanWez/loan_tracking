@@ -8,6 +8,7 @@ import '../models/loan.dart';
 import '../services/storage_service.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/currency_input_formatter.dart';
 import 'loan_detail_screen.dart';
 
 class CustomerDetailScreen extends StatelessWidget {
@@ -179,14 +180,14 @@ class CustomerDetailScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       Material(
                         color: AppTheme.primaryDark,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           onTap: () => _showAddLoanDialog(context, storage),
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 8,
+                              horizontal: 16,
+                              vertical: 12,
                             ),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
@@ -194,15 +195,15 @@ class CustomerDetailScreen extends StatelessWidget {
                                 Icon(
                                   Icons.add_rounded,
                                   color: Colors.white,
-                                  size: 18,
+                                  size: 22,
                                 ),
-                                SizedBox(width: 4),
+                                SizedBox(width: 6),
                                 Text(
                                   'Add',
                                   style: TextStyle(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
-                                    fontSize: 13,
+                                    fontSize: 15,
                                   ),
                                 ),
                               ],
@@ -491,7 +492,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   counterText: '',
                 ),
                 textCapitalization: TextCapitalization.sentences,
-                maxLength: 120,
+                maxLength: 50,
                 maxLines: 2,
               ),
               const SizedBox(height: 16),
@@ -502,7 +503,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   prefixIcon: Icon(Icons.note_rounded),
                 ),
                 maxLines: 2,
-                maxLength: 120,
+                maxLength: 50,
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 24),
@@ -540,6 +541,42 @@ class CustomerDetailScreen extends StatelessWidget {
   void _showDeleteConfirmation(BuildContext context, StorageService storage) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
+    final loans = storage.getLoansForCustomer(customerId);
+    final hasActiveLoans = loans.any(
+      (loan) => loan.status == LoanStatus.active,
+    );
+
+    if (hasActiveLoans) {
+      // Show warning that customer has active loans
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: isDark ? AppTheme.darkCard : AppTheme.lightCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Cannot delete.',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+            ),
+          ),
+          content: Text(
+            'It cannot be deleted because there are still debts to be paid. It can be deleted after all debts are paid off.',
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
@@ -633,7 +670,8 @@ class CustomerDetailScreen extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(8),
+                    LengthLimitingTextInputFormatter(11),
+                    CurrencyInputFormatter(),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -700,7 +738,7 @@ class CustomerDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.note_rounded),
                   ),
                   maxLines: 2,
-                  maxLength: 120,
+                  maxLength: 50,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 24),
@@ -708,7 +746,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      final principal = double.tryParse(
+                      final principal = CurrencyInputFormatter.parse(
                         principalController.text,
                       );
                       if (principal == null || principal <= 0) {

@@ -8,6 +8,7 @@ import '../models/payment.dart';
 import '../services/storage_service.dart';
 import '../providers/theme_provider.dart';
 import '../theme/app_theme.dart';
+import '../utils/currency_input_formatter.dart';
 
 class LoanDetailScreen extends StatelessWidget {
   final String loanId;
@@ -73,7 +74,8 @@ class LoanDetailScreen extends StatelessWidget {
                     label: const Text('Edit'),
                   ),
                   IconButton(
-                    onPressed: () => _showDeleteConfirmation(context, storage),
+                    onPressed: () =>
+                        _showDeleteConfirmation(context, storage, loan),
                     icon: const Icon(
                       Icons.delete_outline_rounded,
                       color: AppTheme.errorColor,
@@ -501,7 +503,7 @@ class LoanDetailScreen extends StatelessWidget {
       floatingActionButton: loan.status == LoanStatus.active
           ? FloatingActionButton.extended(
               onPressed: () =>
-                  _showAddPaymentDialog(context, storage, remaining),
+                  _showAddPaymentDialog(context, storage, loan, remaining),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Add Payment'),
             )
@@ -526,14 +528,13 @@ class LoanDetailScreen extends StatelessWidget {
     StorageService storage,
   ) {
     final principalController = TextEditingController(
-      text: loan.principal.toInt().toString(),
+      text: NumberFormat('#,###', 'en_US').format(loan.principal.toInt()),
     );
     final notesController = TextEditingController(text: loan.notes);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
 
     DateTime loanDate = loan.startDate;
-    LoanStatus status = loan.status;
 
     showModalBottomSheet(
       context: context,
@@ -583,60 +584,9 @@ class LoanDetailScreen extends StatelessWidget {
                   keyboardType: TextInputType.number,
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(8),
+                    LengthLimitingTextInputFormatter(11),
+                    CurrencyInputFormatter(),
                   ],
-                ),
-                const SizedBox(height: 16),
-                // Status Dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDark ? AppTheme.darkCard : Colors.grey[100],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<LoanStatus>(
-                      value: status,
-                      isExpanded: true,
-                      dropdownColor: isDark
-                          ? AppTheme.darkCard
-                          : Colors.grey[100],
-                      items: LoanStatus.values.map((s) {
-                        return DropdownMenuItem(
-                          value: s,
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(s),
-                                  borderRadius: BorderRadius.circular(3),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                s.name.toUpperCase(),
-                                style: TextStyle(
-                                  color: isDark
-                                      ? Colors.white
-                                      : const Color(0xFF1A1A2E),
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() => status = value);
-                        }
-                      },
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
@@ -702,7 +652,7 @@ class LoanDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.note_rounded),
                   ),
                   maxLines: 2,
-                  maxLength: 120,
+                  maxLength: 50,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 24),
@@ -710,7 +660,7 @@ class LoanDetailScreen extends StatelessWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      final principal = double.tryParse(
+                      final principal = CurrencyInputFormatter.parse(
                         principalController.text,
                       );
                       if (principal == null || principal <= 0) {
@@ -736,7 +686,6 @@ class LoanDetailScreen extends StatelessWidget {
                       loan.interestRate = 0.0;
                       loan.startDate = loanDate;
                       loan.dueDate = loanDate;
-                      loan.status = status;
                       loan.notes = notesController.text.trim();
                       loan.updatedAt = DateTime.now();
 
@@ -755,9 +704,45 @@ class LoanDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, StorageService storage) {
+  void _showDeleteConfirmation(
+    BuildContext context,
+    StorageService storage,
+    Loan loan,
+  ) {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
+
+    // Check if loan is not completed (has remaining balance)
+    if (loan.status != LoanStatus.completed) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: isDark ? AppTheme.darkCard : AppTheme.lightCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Cannot delete.',
+            style: TextStyle(
+              color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+            ),
+          ),
+          content: Text(
+            'It can only be deleted after the debt is repaid.',
+            style: TextStyle(
+              color: isDark ? Colors.grey[400] : Colors.grey[600],
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
 
     showDialog(
       context: context,
@@ -798,6 +783,7 @@ class LoanDetailScreen extends StatelessWidget {
   void _showAddPaymentDialog(
     BuildContext context,
     StorageService storage,
+    Loan loan,
     double remaining,
   ) {
     final amountController = TextEditingController();
@@ -865,6 +851,11 @@ class LoanDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.attach_money_rounded),
                   ),
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(11),
+                    CurrencyInputFormatter(),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
@@ -930,13 +921,16 @@ class LoanDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.note_rounded),
                   ),
                   textCapitalization: TextCapitalization.sentences,
+                  maxLength: 50,
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
-                      final amount = double.tryParse(amountController.text);
+                      final amount = CurrencyInputFormatter.parse(
+                        amountController.text,
+                      );
                       if (amount == null || amount <= 0) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
@@ -969,6 +963,16 @@ class LoanDetailScreen extends StatelessWidget {
                       );
 
                       storage.addPayment(payment);
+
+                      // Auto-complete loan if fully paid
+                      final newTotalPaid =
+                          storage.getTotalPaidForLoan(loanId) + amount;
+                      if (newTotalPaid >= loan.totalAmount) {
+                        loan.status = LoanStatus.completed;
+                        loan.updatedAt = DateTime.now();
+                        storage.updateLoan(loan);
+                      }
+
                       Navigator.pop(context);
                     },
                     child: const Text('Add Payment'),
