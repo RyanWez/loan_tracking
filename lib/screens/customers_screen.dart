@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../models/customer.dart';
@@ -22,6 +23,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // Helper to truncate name to 16 chars for display
+  String _truncateName(String name) {
+    if (name.length > 16) {
+      return '${name.substring(0, 16)}...';
+    }
+    return name;
   }
 
   @override
@@ -54,33 +63,79 @@ class _CustomersScreenState extends State<CustomersScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextField(
-                    controller: _searchController,
-                    onChanged: (value) => setState(() => _searchQuery = value),
-                    decoration: InputDecoration(
-                      hintText: 'Search customers...',
-                      hintStyle: TextStyle(
-                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                  // Search box with Add button inline
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
+                          onChanged: (value) =>
+                              setState(() => _searchQuery = value),
+                          decoration: InputDecoration(
+                            hintText: 'Search customers...',
+                            hintStyle: TextStyle(
+                              color: isDark
+                                  ? Colors.grey[500]
+                                  : Colors.grey[400],
+                            ),
+                            prefixIcon: Icon(
+                              Icons.search_rounded,
+                              color: isDark
+                                  ? Colors.grey[500]
+                                  : Colors.grey[400],
+                            ),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: Icon(
+                                      Icons.clear_rounded,
+                                      color: isDark
+                                          ? Colors.grey[500]
+                                          : Colors.grey[400],
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                          ),
+                        ),
                       ),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: isDark ? Colors.grey[500] : Colors.grey[400],
+                      const SizedBox(width: 12),
+                      // Add button inline
+                      Material(
+                        color: AppTheme.primaryDark,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: () => _showAddCustomerDialog(context),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Add',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: Icon(
-                                Icons.clear_rounded,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[400],
-                              ),
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : null,
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -111,7 +166,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           if (_searchQuery.isEmpty) ...[
                             const SizedBox(height: 8),
                             Text(
-                              'Tap + to add your first customer',
+                              'Tap Add to add your first customer',
                               style: TextStyle(
                                 fontSize: 14,
                                 color: isDark
@@ -124,6 +179,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                       ),
                     )
                   : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       itemCount: filteredCustomers.length,
                       itemBuilder: (context, index) {
@@ -187,7 +243,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          customer.name,
+                                          _truncateName(customer.name),
                                           style: TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.w600,
@@ -249,11 +305,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddCustomerDialog(context),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add'),
-      ),
     );
   }
 
@@ -311,6 +362,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   prefixIcon: Icon(Icons.person_rounded),
                 ),
                 textCapitalization: TextCapitalization.words,
+                maxLength: 32,
+                inputFormatters: [LengthLimitingTextInputFormatter(32)],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -320,6 +373,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   prefixIcon: Icon(Icons.phone_rounded),
                 ),
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(11),
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -329,6 +387,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   prefixIcon: Icon(Icons.location_on_rounded),
                 ),
                 textCapitalization: TextCapitalization.sentences,
+                maxLength: 120,
+                maxLines: 2,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -338,6 +398,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
                   prefixIcon: Icon(Icons.note_rounded),
                 ),
                 maxLines: 2,
+                maxLength: 120,
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 24),

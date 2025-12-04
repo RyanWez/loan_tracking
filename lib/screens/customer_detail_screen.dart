@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -35,408 +36,361 @@ class CustomerDetailScreen extends StatelessWidget {
 
     return Scaffold(
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => Navigator.pop(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? AppTheme.darkCard
-                                  : Colors.grey[100],
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              Icons.arrow_back_rounded,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF1A1A2E),
-                            ),
-                          ),
-                        ),
-                        const Spacer(),
-                        IconButton(
-                          onPressed: () => _showEditCustomerDialog(
-                            context,
-                            customer,
-                            storage,
-                          ),
-                          icon: Icon(
-                            Icons.edit_rounded,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () =>
-                              _showDeleteConfirmation(context, storage),
-                          icon: const Icon(
-                            Icons.delete_outline_rounded,
-                            color: AppTheme.errorColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    // Profile Card
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            // Fixed Header with Back button, Edit, Delete
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [AppTheme.primaryDark, Color(0xFF8B83FF)],
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primaryDark.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                        color: isDark ? AppTheme.darkCard : Colors.grey[100],
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Column(
-                        children: [
-                          Container(
-                            width: 72,
-                            height: 72,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            child: Center(
-                              child: Text(
-                                customer.name.isNotEmpty
-                                    ? customer.name[0].toUpperCase()
-                                    : '?',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () =>
+                        _showEditCustomerDialog(context, customer, storage),
+                    icon: Icon(
+                      Icons.edit_rounded,
+                      color: isDark ? Colors.grey[400] : Colors.grey[600],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => _showDeleteConfirmation(context, storage),
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: AppTheme.errorColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Fixed Profile Card (like search bar)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppTheme.primaryDark, Color(0xFF8B83FF)],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryDark.withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: Text(
+                          customer.name.isNotEmpty
+                              ? customer.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 16),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
                             customer.name,
                             style: const TextStyle(
-                              fontSize: 22,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (customer.phone.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.phone_rounded,
-                                  size: 16,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  customer.phone,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          if (customer.address.isNotEmpty) ...[
                             const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.location_on_rounded,
-                                  size: 16,
-                                  color: Colors.white70,
-                                ),
-                                const SizedBox(width: 6),
-                                Flexible(
-                                  child: Text(
-                                    customer.address,
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.white70,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              customer.phone,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.white70,
+                              ),
                             ),
                           ],
                         ],
                       ),
-                    ),
-                    if (customer.notes.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.cardDecoration(isDark),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Notes',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              customer.notes,
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isDark
-                                    ? Colors.grey[300]
-                                    : Colors.grey[700],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Loans',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: isDark
-                                ? Colors.white
-                                : const Color(0xFF1A1A2E),
-                          ),
-                        ),
-                        Text(
-                          '${loans.length} total',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? Colors.grey[500] : Colors.grey[600],
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
               ),
             ),
-            if (loans.isEmpty)
-              SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+            const SizedBox(height: 16),
+            // Loans header with Add button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Loans',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                    ),
+                  ),
+                  Row(
                     children: [
-                      Icon(
-                        Icons.receipt_long_rounded,
-                        size: 64,
-                        color: isDark ? Colors.grey[700] : Colors.grey[300],
-                      ),
-                      const SizedBox(height: 16),
                       Text(
-                        'No loans yet',
+                        '${loans.length} total',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14,
                           color: isDark ? Colors.grey[500] : Colors.grey[600],
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tap + to add a loan',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: isDark ? Colors.grey[600] : Colors.grey[400],
+                      const SizedBox(width: 12),
+                      Material(
+                        color: AppTheme.primaryDark,
+                        borderRadius: BorderRadius.circular(10),
+                        child: InkWell(
+                          onTap: () => _showAddLoanDialog(context, storage),
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Add',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final loan = loans[index];
-                  final paid = storage.getTotalPaidForLoan(loan.id);
-                  final remaining = loan.totalAmount - paid;
-                  final progress = loan.totalAmount > 0
-                      ? paid / loan.totalAmount
-                      : 0.0;
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Scrollable Loans List
+            Expanded(
+              child: loans.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            size: 64,
+                            color: isDark ? Colors.grey[700] : Colors.grey[300],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No loans yet',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: isDark
+                                  ? Colors.grey[500]
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap Add to create a loan',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark
+                                  ? Colors.grey[600]
+                                  : Colors.grey[400],
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      itemCount: loans.length,
+                      itemBuilder: (context, index) {
+                        final loan = loans[index];
+                        final paid = storage.getTotalPaidForLoan(loan.id);
+                        final remaining = loan.totalAmount - paid;
+                        final progress = loan.totalAmount > 0
+                            ? paid / loan.totalAmount
+                            : 0.0;
 
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 6,
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                LoanDetailScreen(loanId: loan.id),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      LoanDetailScreen(loanId: loan.id),
+                                ),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: AppTheme.cardDecoration(isDark),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(
+                                            loan.status,
+                                          ).withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          loan.status.name.toUpperCase(),
+                                          style: TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w600,
+                                            color: _getStatusColor(loan.status),
+                                          ),
+                                        ),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        currencyFormat.format(loan.principal),
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark
+                                              ? Colors.white
+                                              : const Color(0xFF1A1A2E),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 14,
+                                        color: isDark
+                                            ? Colors.grey[500]
+                                            : Colors.grey[600],
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        DateFormat(
+                                          'MMM d, y',
+                                        ).format(loan.startDate),
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          color: isDark
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: progress.clamp(0.0, 1.0),
+                                      backgroundColor: isDark
+                                          ? Colors.white.withValues(alpha: 0.1)
+                                          : Colors.grey[200],
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        progress >= 1.0
+                                            ? AppTheme.successColor
+                                            : AppTheme.primaryDark,
+                                      ),
+                                      minHeight: 6,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Paid: ${currencyFormat.format(paid)}',
+                                        style: const TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.successColor,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Remaining: ${currencyFormat.format(remaining)}',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: isDark
+                                              ? Colors.grey[400]
+                                              : Colors.grey[600],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         );
                       },
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: AppTheme.cardDecoration(isDark),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: _getStatusColor(
-                                      loan.status,
-                                    ).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    loan.status.name.toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: _getStatusColor(loan.status),
-                                    ),
-                                  ),
-                                ),
-                                const Spacer(),
-                                Text(
-                                  currencyFormat.format(loan.principal),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: isDark
-                                        ? Colors.white
-                                        : const Color(0xFF1A1A2E),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today_rounded,
-                                  size: 14,
-                                  color: isDark
-                                      ? Colors.grey[500]
-                                      : Colors.grey[600],
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  'Due: ${DateFormat('MMM d, y').format(loan.dueDate)}',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                                if (loan.interestRate > 0) ...[
-                                  const SizedBox(width: 16),
-                                  Icon(
-                                    Icons.percent_rounded,
-                                    size: 14,
-                                    color: isDark
-                                        ? Colors.grey[500]
-                                        : Colors.grey[600],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${loan.interestRate.toStringAsFixed(1)}% p.a.',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: isDark
-                                          ? Colors.grey[400]
-                                          : Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: progress.clamp(0.0, 1.0),
-                                backgroundColor: isDark
-                                    ? Colors.white.withValues(alpha: 0.1)
-                                    : Colors.grey[200],
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  progress >= 1.0
-                                      ? AppTheme.successColor
-                                      : AppTheme.primaryDark,
-                                ),
-                                minHeight: 6,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Paid: ${currencyFormat.format(paid)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppTheme.successColor,
-                                  ),
-                                ),
-                                Text(
-                                  'Remaining: ${currencyFormat.format(remaining)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: isDark
-                                        ? Colors.grey[400]
-                                        : Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
-                  );
-                }, childCount: loans.length),
-              ),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddLoanDialog(context, storage),
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Loan'),
       ),
     );
   }
@@ -509,6 +463,8 @@ class CustomerDetailScreen extends StatelessWidget {
                   prefixIcon: Icon(Icons.person_rounded),
                 ),
                 textCapitalization: TextCapitalization.words,
+                maxLength: 32,
+                inputFormatters: [LengthLimitingTextInputFormatter(32)],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -518,6 +474,11 @@ class CustomerDetailScreen extends StatelessWidget {
                   prefixIcon: Icon(Icons.phone_rounded),
                 ),
                 keyboardType: TextInputType.phone,
+                maxLength: 11,
+                inputFormatters: [
+                  LengthLimitingTextInputFormatter(11),
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
               ),
               const SizedBox(height: 16),
               TextField(
@@ -527,6 +488,8 @@ class CustomerDetailScreen extends StatelessWidget {
                   prefixIcon: Icon(Icons.location_on_rounded),
                 ),
                 textCapitalization: TextCapitalization.sentences,
+                maxLength: 120,
+                maxLines: 2,
               ),
               const SizedBox(height: 16),
               TextField(
@@ -536,6 +499,7 @@ class CustomerDetailScreen extends StatelessWidget {
                   prefixIcon: Icon(Icons.note_rounded),
                 ),
                 maxLines: 2,
+                maxLength: 120,
                 textCapitalization: TextCapitalization.sentences,
               ),
               const SizedBox(height: 24),
@@ -612,13 +576,11 @@ class CustomerDetailScreen extends StatelessWidget {
 
   void _showAddLoanDialog(BuildContext context, StorageService storage) {
     final principalController = TextEditingController();
-    final interestController = TextEditingController(text: '0');
     final notesController = TextEditingController();
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
 
-    DateTime startDate = DateTime.now();
-    DateTime dueDate = DateTime.now().add(const Duration(days: 30));
+    DateTime loanDate = DateTime.now();
 
     showModalBottomSheet(
       context: context,
@@ -662,35 +624,26 @@ class CustomerDetailScreen extends StatelessWidget {
                 TextField(
                   controller: principalController,
                   decoration: const InputDecoration(
-                    labelText: 'Principal Amount (MMK) *',
+                    labelText: 'Amount (MMK) *',
                     prefixIcon: Icon(Icons.attach_money_rounded),
-                    helperText: 'Maximum: 99,999,999 MMK',
                   ),
                   keyboardType: TextInputType.number,
-                  maxLength: 8,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: interestController,
-                  decoration: const InputDecoration(
-                    labelText: 'Interest Rate (% per year)',
-                    prefixIcon: Icon(Icons.percent_rounded),
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(8),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 GestureDetector(
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: startDate,
+                      initialDate: loanDate,
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
-                      setState(() => startDate = picked);
+                      setState(() => loanDate = picked);
                     }
                   },
                   child: Container(
@@ -713,7 +666,7 @@ class CustomerDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Start Date',
+                              'Loan Date',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark
@@ -722,63 +675,7 @@ class CustomerDetailScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              DateFormat('MMM d, y').format(startDate),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1A1A2E),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: dueDate,
-                      firstDate: startDate,
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setState(() => dueDate = picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppTheme.darkCard : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.event_rounded,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Due Date',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                            Text(
-                              DateFormat('MMM d, y').format(dueDate),
+                              DateFormat('MMM d, y').format(loanDate),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: isDark
@@ -800,6 +697,7 @@ class CustomerDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.note_rounded),
                   ),
                   maxLines: 2,
+                  maxLength: 120,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 24),
@@ -829,17 +727,15 @@ class CustomerDetailScreen extends StatelessWidget {
                         return;
                       }
 
-                      final interest =
-                          double.tryParse(interestController.text) ?? 0.0;
                       final now = DateTime.now();
 
                       final loan = Loan(
                         id: const Uuid().v4(),
                         customerId: customerId,
                         principal: principal,
-                        interestRate: interest,
-                        startDate: startDate,
-                        dueDate: dueDate,
+                        interestRate: 0.0, // No interest
+                        startDate: loanDate,
+                        dueDate: loanDate, // Same as loan date (simplified)
                         notes: notesController.text.trim(),
                         createdAt: now,
                         updatedAt: now,

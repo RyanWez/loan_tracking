@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
@@ -574,15 +575,11 @@ class LoanDetailScreen extends StatelessWidget {
     final principalController = TextEditingController(
       text: loan.principal.toInt().toString(),
     );
-    final interestController = TextEditingController(
-      text: loan.interestRate.toString(),
-    );
     final notesController = TextEditingController(text: loan.notes);
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     final isDark = themeProvider.isDarkMode;
 
-    DateTime startDate = loan.startDate;
-    DateTime dueDate = loan.dueDate;
+    DateTime loanDate = loan.startDate;
     LoanStatus status = loan.status;
 
     showModalBottomSheet(
@@ -627,23 +624,14 @@ class LoanDetailScreen extends StatelessWidget {
                 TextField(
                   controller: principalController,
                   decoration: const InputDecoration(
-                    labelText: 'Principal Amount (MMK) *',
+                    labelText: 'Amount (MMK) *',
                     prefixIcon: Icon(Icons.attach_money_rounded),
-                    helperText: 'Maximum: 99,999,999 MMK',
                   ),
                   keyboardType: TextInputType.number,
-                  maxLength: 8,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: interestController,
-                  decoration: const InputDecoration(
-                    labelText: 'Interest Rate (% per year)',
-                    prefixIcon: Icon(Icons.percent_rounded),
-                  ),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(8),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 // Status Dropdown
@@ -702,12 +690,12 @@ class LoanDetailScreen extends StatelessWidget {
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
-                      initialDate: startDate,
+                      initialDate: loanDate,
                       firstDate: DateTime(2020),
                       lastDate: DateTime(2100),
                     );
                     if (picked != null) {
-                      setState(() => startDate = picked);
+                      setState(() => loanDate = picked);
                     }
                   },
                   child: Container(
@@ -730,7 +718,7 @@ class LoanDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Start Date',
+                              'Loan Date',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: isDark
@@ -739,63 +727,7 @@ class LoanDetailScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              DateFormat('MMM d, y').format(startDate),
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF1A1A2E),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GestureDetector(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: context,
-                      initialDate: dueDate,
-                      firstDate: startDate,
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      setState(() => dueDate = picked);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDark ? AppTheme.darkCard : Colors.grey[100],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.event_rounded,
-                          color: isDark ? Colors.grey[400] : Colors.grey[600],
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Due Date',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark
-                                    ? Colors.grey[500]
-                                    : Colors.grey[600],
-                              ),
-                            ),
-                            Text(
-                              DateFormat('MMM d, y').format(dueDate),
+                              DateFormat('MMM d, y').format(loanDate),
                               style: TextStyle(
                                 fontSize: 16,
                                 color: isDark
@@ -817,6 +749,7 @@ class LoanDetailScreen extends StatelessWidget {
                     prefixIcon: Icon(Icons.note_rounded),
                   ),
                   maxLines: 2,
+                  maxLength: 120,
                   textCapitalization: TextCapitalization.sentences,
                 ),
                 const SizedBox(height: 24),
@@ -846,13 +779,10 @@ class LoanDetailScreen extends StatelessWidget {
                         return;
                       }
 
-                      final interest =
-                          double.tryParse(interestController.text) ?? 0.0;
-
                       loan.principal = principal;
-                      loan.interestRate = interest;
-                      loan.startDate = startDate;
-                      loan.dueDate = dueDate;
+                      loan.interestRate = 0.0;
+                      loan.startDate = loanDate;
+                      loan.dueDate = loanDate;
                       loan.status = status;
                       loan.notes = notesController.text.trim();
                       loan.updatedAt = DateTime.now();
