@@ -8,7 +8,6 @@ import '../../theme/app_theme.dart';
 // Import widgets
 import 'widgets/stat_card.dart';
 import 'widgets/loan_overview_card.dart';
-import 'widgets/overdue_loan_item.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -109,34 +108,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             // Stats Grid
             SliverToBoxAdapter(child: _buildStatsGrid(storage, isDark)),
-            // Overdue Loans Section
-            if (storage.overdueLoans.isNotEmpty) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-                  child: Text(
-                    'dashboard.overdue_loans'.tr(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: isDark ? Colors.white : const Color(0xFF1A1A2E),
-                    ),
-                  ),
-                ),
-              ),
-              SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final loan = storage.overdueLoans[index];
-                  return OverdueLoanItem(
-                    loan: loan,
-                    storage: storage,
-                    isDark: isDark,
-                    currencyFormat: currencyFormat,
-                    animationIndex: index,
-                  );
-                }, childCount: storage.overdueLoans.length),
-              ),
-            ],
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -206,10 +177,10 @@ class _DashboardScreenState extends State<DashboardScreen>
             children: [
               Expanded(
                 child: StatCard(
-                  title: 'dashboard.overdue'.tr(),
-                  value: storage.overdueLoans.length.toString(),
-                  icon: Icons.warning_rounded,
-                  color: AppTheme.warningColor,
+                  title: 'dashboard.completed_loans'.tr(),
+                  value: storage.completedLoansCount.toString(),
+                  icon: Icons.check_circle_rounded,
+                  color: AppTheme.successColor,
                   isDark: isDark,
                   animationIndex: 2,
                 ),

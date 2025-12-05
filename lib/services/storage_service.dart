@@ -162,10 +162,6 @@ class StorageService extends ChangeNotifier {
   int get activeLoansCount =>
       _loans.where((l) => l.status == LoanStatus.active).length;
 
-  List<Loan> get overdueLoans {
-    final now = DateTime.now();
-    return _loans
-        .where((l) => l.status == LoanStatus.active && l.dueDate.isBefore(now))
-        .toList();
-  }
+  int get completedLoansCount =>
+      _loans.where((l) => l.status == LoanStatus.completed).length;
 }

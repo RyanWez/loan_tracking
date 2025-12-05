@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum LoanStatus { active, completed, overdue }
+enum LoanStatus { active, completed }
 
 class Loan {
   final String id;

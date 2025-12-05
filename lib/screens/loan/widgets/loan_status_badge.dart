@@ -10,8 +10,6 @@ Color getStatusColor(LoanStatus status) {
       return AppTheme.primaryDark;
     case LoanStatus.completed:
       return AppTheme.successColor;
-    case LoanStatus.overdue:
-      return AppTheme.warningColor;
   }
 }
 
@@ -22,8 +20,6 @@ String getLocalizedStatus(LoanStatus status) {
       return 'loan.active'.tr();
     case LoanStatus.completed:
       return 'loan.completed'.tr();
-    case LoanStatus.overdue:
-      return 'loan.overdue'.tr();
   }
 }
 
