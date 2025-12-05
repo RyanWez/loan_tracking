@@ -20,13 +20,46 @@ class CustomersScreen extends StatefulWidget {
   State<CustomersScreen> createState() => _CustomersScreenState();
 }
 
-class _CustomersScreenState extends State<CustomersScreen> {
+class _CustomersScreenState extends State<CustomersScreen>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: const Interval(0.0, 0.6, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _animationController.forward();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -46,7 +79,13 @@ class _CustomersScreenState extends State<CustomersScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(context, isDark),
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: _buildHeader(context, isDark),
+              ),
+            ),
             Expanded(
               child: _buildCustomerList(
                 context,
@@ -153,34 +192,39 @@ class _CustomersScreenState extends State<CustomersScreen> {
     List filteredCustomers,
   ) {
     if (filteredCustomers.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline_rounded,
-              size: 64,
-              color: isDark ? Colors.grey[700] : Colors.grey[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _searchQuery.isEmpty ? 'No customers yet' : 'No customers found',
-              style: TextStyle(
-                fontSize: 16,
-                color: isDark ? Colors.grey[500] : Colors.grey[600],
+      return FadeTransition(
+        opacity: _fadeAnimation,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.people_outline_rounded,
+                size: 64,
+                color: isDark ? Colors.grey[700] : Colors.grey[300],
               ),
-            ),
-            if (_searchQuery.isEmpty) ...[
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Text(
-                'Tap Add to add your first customer',
+                _searchQuery.isEmpty
+                    ? 'No customers yet'
+                    : 'No customers found',
                 style: TextStyle(
-                  fontSize: 14,
-                  color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  fontSize: 16,
+                  color: isDark ? Colors.grey[500] : Colors.grey[600],
                 ),
               ),
+              if (_searchQuery.isEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Tap Add to add your first customer',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: isDark ? Colors.grey[600] : Colors.grey[400],
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       );
     }
@@ -191,19 +235,32 @@ class _CustomersScreenState extends State<CustomersScreen> {
       itemCount: filteredCustomers.length,
       itemBuilder: (context, index) {
         final customer = filteredCustomers[index];
-        return CustomerCard(
-          customer: customer,
-          storage: storage,
-          isDark: isDark,
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) =>
-                    CustomerDetailScreen(customerId: customer.id),
-              ),
+
+        // Staggered animation for each card
+        return TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0.0, end: 1.0),
+          duration: Duration(milliseconds: 400 + (index * 100).clamp(0, 300)),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, child) {
+            return Transform.translate(
+              offset: Offset(0, 20 * (1 - value)),
+              child: Opacity(opacity: value, child: child),
             );
           },
+          child: CustomerCard(
+            customer: customer,
+            storage: storage,
+            isDark: isDark,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      CustomerDetailScreen(customerId: customer.id),
+                ),
+              );
+            },
+          ),
         );
       },
     );
