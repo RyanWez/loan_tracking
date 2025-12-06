@@ -100,4 +100,10 @@ flutter:
   assets:
     - assets/translations/
 
+  # Custom fonts
+  fonts:
+    - family: PangramBig
+      fonts:
+        - asset: assets/fonts/PangramBig.ttf
+
 

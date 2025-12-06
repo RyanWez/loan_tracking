@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
+  // Custom font family for Myanmar text support
+  static const String fontFamily = 'PangramBig';
   // Modern color palette
   static const Color primaryDark = Color(0xFF6C63FF);
   static const Color primaryLight = Color(0xFF5A52E0);
@@ -22,6 +24,7 @@ class AppTheme {
   static ThemeData darkTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,
+    fontFamily: fontFamily,
     scaffoldBackgroundColor: darkBackground,
     colorScheme: const ColorScheme.dark(
       primary: primaryDark,
@@ -95,6 +98,7 @@ class AppTheme {
   static ThemeData lightTheme = ThemeData(
     useMaterial3: true,
     brightness: Brightness.light,
+    fontFamily: fontFamily,
     scaffoldBackgroundColor: lightBackground,
     colorScheme: const ColorScheme.light(
       primary: primaryLight,
